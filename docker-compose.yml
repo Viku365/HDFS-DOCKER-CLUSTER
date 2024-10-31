@@ -1,0 +1,161 @@
+services:
+  namenode:
+    image: apache/hadoop:3.3.5
+    container_name: namenode
+    hostname: namenode
+    user: root
+    environment:
+      - HADOOP_HOME=/opt/hadoop
+    volumes:
+      - ./hadoop_namenode:/opt/hadoop/data/nameNode
+      - ./hadoop_config:/opt/hadoop/etc/hadoop
+      - ./start-hdfs.sh:/start-hdfs.sh
+    ports:
+      - "9870:9870"
+    command: [ "/bin/bash", "/start-hdfs.sh" ]
+    networks:
+      hdfs_network:
+        ipv4_address: 172.20.0.2
+
+  datanode1:
+    image: apache/hadoop:3.3.5
+    container_name: datanode1
+    hostname: datanode1
+    user: root
+    environment:
+      - HADOOP_HOME=/opt/hadoop
+    volumes:
+      - ./hadoop_datanode1:/opt/hadoop/data/dataNode
+      - ./hadoop_config:/opt/hadoop/etc/hadoop
+      - ./init-datanode.sh:/init-datanode.sh
+    depends_on:
+      - namenode
+    command: [ "/bin/bash", "/init-datanode.sh" ]
+    networks:
+      hdfs_network:
+        ipv4_address: 172.20.0.3
+
+  datanode2:
+    image: apache/hadoop:3.3.5
+    container_name: datanode2
+    hostname: datanode2
+    user: root
+    environment:
+      - HADOOP_HOME=/opt/hadoop
+    volumes:
+      - ./hadoop_datanode2:/opt/hadoop/data/dataNode
+      - ./hadoop_config:/opt/hadoop/etc/hadoop
+      - ./init-datanode.sh:/init-datanode.sh
+    depends_on:
+      - namenode
+    command: [ "/bin/bash", "/init-datanode.sh" ]
+    networks:
+      hdfs_network:
+        ipv4_address: 172.20.0.4
+
+  datanode3:
+    image: apache/hadoop:3.3.5
+    container_name: datanode3
+    hostname: datanode3
+    user: root
+    environment:
+      - HADOOP_HOME=/opt/hadoop
+    volumes:
+      - ./hadoop_datanode3:/opt/hadoop/data/dataNode
+      - ./hadoop_config:/opt/hadoop/etc/hadoop
+      - ./init-datanode.sh:/init-datanode.sh
+    depends_on:
+      - namenode
+    command: [ "/bin/bash", "/init-datanode.sh" ]
+    networks:
+      hdfs_network:
+        ipv4_address: 172.20.0.5
+
+  resourcemanager:
+    image: bde2020/hadoop-resourcemanager:2.0.0-hadoop3.2.1-java8
+    container_name: resourcemanager
+    environment:
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+      - YARN_CONF_yarn_resourcemanager_hostname=resourcemanager
+    ports:
+      - 8088:8088
+    networks:
+      hdfs_network:
+        ipv4_address: 172.20.0.6
+
+  nodemanager1:
+    image: apache/hadoop:3.3.5
+    container_name: nodemanager1
+    hostname: nodemanager1
+    user: root
+    environment:
+      - HADOOP_HOME=/opt/hadoop
+    volumes:
+      - ./hadoop_config:/opt/hadoop/etc/hadoop
+    depends_on:
+      - resourcemanager
+      - datanode1
+    command: [ "/bin/bash", "-c", "yarn --daemon start nodemanager && tail -f /dev/null" ]
+    networks:
+      hdfs_network:
+        ipv4_address: 172.20.0.7
+
+  nodemanager2:
+    image: apache/hadoop:3.3.5
+    container_name: nodemanager2
+    hostname: nodemanager2
+    user: root
+    environment:
+      - HADOOP_HOME=/opt/hadoop
+    volumes:
+      - ./hadoop_config:/opt/hadoop/etc/hadoop
+    depends_on:
+      - resourcemanager
+      - datanode2
+    command: [ "/bin/bash", "-c", "yarn --daemon start nodemanager && tail -f /dev/null" ]
+    networks:
+      hdfs_network:
+        ipv4_address: 172.20.0.8
+
+  nodemanager3:
+    image: apache/hadoop:3.3.5
+    container_name: nodemanager3
+    hostname: nodemanager3
+    user: root
+    environment:
+      - HADOOP_HOME=/opt/hadoop
+    volumes:
+      - ./hadoop_config:/opt/hadoop/etc/hadoop
+    depends_on:
+      - resourcemanager
+      - datanode3
+    command: [ "/bin/bash", "-c", "yarn --daemon start nodemanager && tail -f /dev/null" ]
+    networks:
+      hdfs_network:
+        ipv4_address: 172.20.0.9
+
+  historyserver:
+    image: apache/hadoop:3.3.5
+    container_name: historyserver
+    hostname: historyserver
+    user: root
+    environment:
+      - HADOOP_HOME=/opt/hadoop
+    volumes:
+      - ./hadoop_config:/opt/hadoop/etc/hadoop
+    depends_on:
+      - namenode
+      - resourcemanager
+    command: [ "/bin/bash", "-c", "mapred --daemon start historyserver && tail -f /dev/null" ]
+    ports:
+      - "19888:19888"
+    networks:
+      hdfs_network:
+        ipv4_address: 172.20.0.10
+
+networks:
+  hdfs_network:
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.0.0/16
