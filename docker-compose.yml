@@ -153,6 +153,56 @@ services:
       hdfs_network:
         ipv4_address: 172.20.0.10
 
+  mysql:
+    image: mysql:5.7
+    container_name: mysql
+    hostname: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: metastore
+      MYSQL_USER: hive
+      MYSQL_PASSWORD: hive
+    ports:
+      - "3306:3306"
+    networks:
+      hdfs_network:
+        ipv4_address: 172.20.0.11
+
+  hive-metastore:
+    image: bde2020/hive:2.3.2-postgresql-metastore
+    container_name: hive-metastore
+    hostname: hive-metastore
+    environment:
+      - HIVE_METASTORE_URI=thrift://hive-metastore:9083
+      - HIVE_CONF_METASTORE_DB_TYPE=mysql
+      - HIVE_METASTORE_DB_HOSTNAME=mysql
+      - HIVE_METASTORE_DB_PORT=3306
+      - HIVE_METASTORE_DB_NAME=metastore
+      - HIVE_METASTORE_DB_USER=hive
+      - HIVE_METASTORE_DB_PASSWORD=hive
+    depends_on:
+      - mysql
+    ports:
+      - "9083:9083"
+    networks:
+      hdfs_network:
+        ipv4_address: 172.20.0.12
+
+  hive-server:
+    image: bde2020/hive:2.3.2-postgresql-metastore
+    container_name: hive-server
+    hostname: hive-server
+    environment:
+      - HIVE_METASTORE_URI=thrift://hive-metastore:9083
+      - SERVICE_PRECONDITION=hive-metastore:9083
+    depends_on:
+      - hive-metastore
+    ports:
+      - "10000:10000"
+    networks:
+      hdfs_network:
+        ipv4_address: 172.20.0.13
+
 networks:
   hdfs_network:
     ipam:
